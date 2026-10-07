@@ -7,15 +7,18 @@ import {
   Check, 
   Sparkles, 
   FileText, 
-  Maximize2,
   ZoomIn,
   ZoomOut,
-  ShieldCheck,
   RefreshCw
 } from 'lucide-react';
 import { QRContentState, QRStyleState } from '../types';
 import { generateQRPayload } from '../utils/qrPayload';
 import { renderComposedQRCanvas } from '../utils/canvasRenderer';
+import { 
+  BUILTIN_SVG_TEMPLATES, 
+  injectQRIntoSvgTemplate, 
+  renderSvgStringToCanvas 
+} from '../utils/svgTemplateEngine';
 
 interface QRPreviewProps {
   content: QRContentState;
@@ -28,9 +31,11 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
   const [copied, setCopied] = useState(false);
   const [downloadResolution, setDownloadResolution] = useState<number>(2048);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
+  const [composedSvgString, setComposedSvgString] = useState<string | null>(null);
+
   const payload = generateQRPayload(content);
 
-  // Re-render when content or style changes
+  // Re-render preview whenever payload or style changes
   useEffect(() => {
     let isCancelled = false;
 
@@ -38,84 +43,165 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
       try {
         setIsRendering(true);
 
-        const qrInstance = new QRCodeStyling({
-          width: 600,
-          height: 600,
-          data: payload,
-          image: style.logoSrc || undefined,
-          dotsOptions: {
-            type: style.dotsType,
-            color: style.dotColor,
-            gradient: style.useGradient
-              ? {
-                  type: style.gradientType,
-                  rotation: (style.gradientRotation * Math.PI) / 180,
-                  colorStops: [
-                    { offset: 0, color: style.dotColor },
-                    { offset: 1, color: style.gradientColor2 }
-                  ]
-                }
-              : undefined
-          },
-          cornersSquareOptions: {
-            type: style.cornersSquareType,
-            color: style.cornersSquareColor
-          },
-          cornersDotOptions: {
-            type: style.cornersDotType,
-            color: style.cornersDotColor
-          },
-          backgroundOptions: {
-            color: style.transparentBackground ? 'transparent' : style.backgroundColor
-          },
-          imageOptions: {
-            crossOrigin: 'anonymous',
-            margin: style.logoMargin,
-            imageSize: style.logoSize,
-            hideBackgroundDots: style.hideBehindLogo
-          },
-          qrOptions: {
-            errorCorrectionLevel: style.errorCorrectionLevel
-          }
-        });
+        const isSvgTemplateMode = style.svgTemplate?.enabled;
+        const templateId = style.svgTemplate?.templateId || 'happy-anniversary-svg';
+        const rawTemplate = style.svgTemplate?.rawSvg || BUILTIN_SVG_TEMPLATES[templateId]?.rawSvg;
 
-        const rawBlob: any = await qrInstance.getRawData('png');
-        if (!rawBlob || isCancelled) return;
-
-        const blob = rawBlob instanceof Blob ? rawBlob : new Blob([rawBlob as BlobPart], { type: 'image/png' });
-        const objectUrl = URL.createObjectURL(blob);
-        const img = new Image();
-
-        img.onload = async () => {
-          if (isCancelled) {
-            URL.revokeObjectURL(objectUrl);
-            return;
-          }
-
-          // Composite Frame + QR at 600px for the preview
-          const composed = await renderComposedQRCanvas({
-            qrImage: img,
-            style,
-            targetSize: 600
+        if (isSvgTemplateMode && rawTemplate) {
+          // 1. Generate clean SVG QR Code at 300x300 for template injection
+          const qrInstance = new QRCodeStyling({
+            width: 300,
+            height: 300,
+            data: payload,
+            image: style.logoSrc || undefined,
+            dotsOptions: {
+              type: style.dotsType,
+              color: style.dotColor,
+              gradient: style.useGradient
+                ? {
+                    type: style.gradientType,
+                    rotation: (style.gradientRotation * Math.PI) / 180,
+                    colorStops: [
+                      { offset: 0, color: style.dotColor },
+                      { offset: 1, color: style.gradientColor2 }
+                    ]
+                  }
+                : undefined
+            },
+            cornersSquareOptions: {
+              type: style.cornersSquareType,
+              color: style.cornersSquareColor
+            },
+            cornersDotOptions: {
+              type: style.cornersDotType,
+              color: style.cornersDotColor
+            },
+            backgroundOptions: {
+              color: style.transparentBackground ? 'transparent' : style.backgroundColor
+            },
+            imageOptions: {
+              crossOrigin: 'anonymous',
+              margin: style.logoMargin,
+              imageSize: style.logoSize,
+              hideBackgroundDots: style.hideBehindLogo
+            },
+            qrOptions: {
+              errorCorrectionLevel: style.errorCorrectionLevel
+            }
           });
 
-          URL.revokeObjectURL(objectUrl);
+          const svgBlob: any = await qrInstance.getRawData('svg');
+          if (!svgBlob || isCancelled) return;
 
+          const qrSvgText = svgBlob instanceof Blob ? await svgBlob.text() : svgBlob.toString();
+
+          // Inject QR code into the SVG template
+          const composedSvg = injectQRIntoSvgTemplate(rawTemplate, qrSvgText, {
+            dotColor: style.dotColor,
+            cornerColor: style.cornersSquareColor,
+            syncColors: style.svgTemplate?.syncColors
+          });
+
+          if (isCancelled) return;
+          setComposedSvgString(composedSvg);
+
+          // Render composed SVG to Canvas preview at 600px
+          const previewCanvas = await renderSvgStringToCanvas(composedSvg, 600);
           if (isCancelled || !canvasRef.current) return;
 
-          const previewCanvas = canvasRef.current;
-          previewCanvas.width = composed.width;
-          previewCanvas.height = composed.height;
+          const targetCanvas = canvasRef.current;
+          targetCanvas.width = previewCanvas.width;
+          targetCanvas.height = previewCanvas.height;
 
-          const ctx = previewCanvas.getContext('2d');
+          const ctx = targetCanvas.getContext('2d');
           if (ctx) {
-            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-            ctx.drawImage(composed, 0, 0);
+            ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
+            ctx.drawImage(previewCanvas, 0, 0);
           }
           setIsRendering(false);
-        };
 
-        img.src = objectUrl;
+        } else {
+          // Standard Canvas Frame Mode
+          setComposedSvgString(null);
+
+          const qrInstance = new QRCodeStyling({
+            width: 600,
+            height: 600,
+            data: payload,
+            image: style.logoSrc || undefined,
+            dotsOptions: {
+              type: style.dotsType,
+              color: style.dotColor,
+              gradient: style.useGradient
+                ? {
+                    type: style.gradientType,
+                    rotation: (style.gradientRotation * Math.PI) / 180,
+                    colorStops: [
+                      { offset: 0, color: style.dotColor },
+                      { offset: 1, color: style.gradientColor2 }
+                    ]
+                  }
+                : undefined
+            },
+            cornersSquareOptions: {
+              type: style.cornersSquareType,
+              color: style.cornersSquareColor
+            },
+            cornersDotOptions: {
+              type: style.cornersDotType,
+              color: style.cornersDotColor
+            },
+            backgroundOptions: {
+              color: style.transparentBackground ? 'transparent' : style.backgroundColor
+            },
+            imageOptions: {
+              crossOrigin: 'anonymous',
+              margin: style.logoMargin,
+              imageSize: style.logoSize,
+              hideBackgroundDots: style.hideBehindLogo
+            },
+            qrOptions: {
+              errorCorrectionLevel: style.errorCorrectionLevel
+            }
+          });
+
+          const rawBlob: any = await qrInstance.getRawData('png');
+          if (!rawBlob || isCancelled) return;
+
+          const blob = rawBlob instanceof Blob ? rawBlob : new Blob([rawBlob as BlobPart], { type: 'image/png' });
+          const objectUrl = URL.createObjectURL(blob);
+          const img = new Image();
+
+          img.onload = async () => {
+            if (isCancelled) {
+              URL.revokeObjectURL(objectUrl);
+              return;
+            }
+
+            const composed = await renderComposedQRCanvas({
+              qrImage: img,
+              style,
+              targetSize: 600
+            });
+
+            URL.revokeObjectURL(objectUrl);
+
+            if (isCancelled || !canvasRef.current) return;
+
+            const previewCanvas = canvasRef.current;
+            previewCanvas.width = composed.width;
+            previewCanvas.height = composed.height;
+
+            const ctx = previewCanvas.getContext('2d');
+            if (ctx) {
+              ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+              ctx.drawImage(composed, 0, 0);
+            }
+            setIsRendering(false);
+          };
+
+          img.src = objectUrl;
+        }
       } catch (err) {
         console.error('Failed to generate QR preview:', err);
         setIsRendering(false);
@@ -134,6 +220,21 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
     try {
       setIsRendering(true);
 
+      if (style.svgTemplate?.enabled && composedSvgString) {
+        // High-res rasterization of composed SVG
+        const highResCanvas = await renderSvgStringToCanvas(composedSvgString, downloadResolution);
+        const mime = format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
+        const dataUrl = highResCanvas.toDataURL(mime, 0.95);
+
+        const link = document.createElement('a');
+        link.download = `qrcode-template-${downloadResolution}px.${format}`;
+        link.href = dataUrl;
+        link.click();
+        setIsRendering(false);
+        return;
+      }
+
+      // Standard Canvas mode high-res export
       const qrInstance = new QRCodeStyling({
         width: downloadResolution,
         height: downloadResolution,
@@ -209,6 +310,18 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
 
   const handleDownloadSVG = async () => {
     try {
+      if (style.svgTemplate?.enabled && composedSvgString) {
+        // Download authentic vector SVG template directly
+        const blob = new Blob([composedSvgString], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement('a');
+        link.download = `qrcode-vector-anniversary-template.svg`;
+        link.href = url;
+        link.click();
+        URL.revokeObjectURL(url);
+        return;
+      }
+
       const qrInstance = new QRCodeStyling({
         width: 1024,
         height: 1024,
@@ -312,7 +425,13 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
             <span>Live Preview</span>
             {isRendering && <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />}
           </h2>
-          <p className="text-xs text-slate-400">High-res client-side rendering</p>
+          <p className="text-xs text-slate-400">
+            {style.svgTemplate?.enabled ? (
+              <span className="text-pink-400 font-medium">Vector SVG Template Engine active</span>
+            ) : (
+              'High-res client-side rendering'
+            )}
+          </p>
         </div>
 
         <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">

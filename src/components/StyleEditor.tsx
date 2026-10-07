@@ -165,9 +165,103 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange }) => 
       {/* 1. FRAME & TEXT SECTION */}
       {activeSection === 'frame' && (
         <div className="space-y-4">
+          {/* SVG Template Mode Box */}
+          <div className="p-4 bg-gradient-to-r from-purple-950/40 via-slate-950/60 to-pink-950/40 rounded-xl border border-pink-500/30 space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-pink-300 flex items-center gap-1.5">
+                  <Sparkles className="w-3.5 h-3.5 text-pink-400" />
+                  Authentic me-qr Vector SVG Template
+                </span>
+                <span className="text-[10px] px-1.5 py-0.5 rounded bg-pink-500/20 text-pink-300 font-mono">
+                  templates/happy_anniversary.svg
+                </span>
+              </div>
+
+              <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={style.svgTemplate?.enabled ?? false}
+                  onChange={e => {
+                    const checked = e.target.checked;
+                    onChange(prev => ({
+                      ...prev,
+                      svgTemplate: {
+                        enabled: checked,
+                        templateId: prev.svgTemplate?.templateId || 'happy-anniversary-svg',
+                        rawSvg: prev.svgTemplate?.rawSvg || null,
+                        syncColors: prev.svgTemplate?.syncColors ?? false,
+                      }
+                    }));
+                  }}
+                  className="rounded border-slate-700 text-pink-600 focus:ring-pink-500"
+                />
+                <span className="font-semibold text-slate-200">Enable SVG Template</span>
+              </label>
+            </div>
+
+            <p className="text-[11px] text-slate-400 leading-relaxed">
+              Injects the dynamically generated QR code directly into the vector SVG template from the <code className="text-pink-300">templates/</code> folder (pure 1500×1500 lossless vector artwork with floating hearts wreath).
+            </p>
+
+            {style.svgTemplate?.enabled && (
+              <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-slate-800">
+                <label className="flex items-center gap-2 text-xs text-slate-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={style.svgTemplate?.syncColors ?? false}
+                    onChange={e => {
+                      const checked = e.target.checked;
+                      onChange(prev => ({
+                        ...prev,
+                        svgTemplate: {
+                          enabled: true,
+                          templateId: prev.svgTemplate?.templateId || 'happy-anniversary-svg',
+                          rawSvg: prev.svgTemplate?.rawSvg || null,
+                          syncColors: checked,
+                        }
+                      }));
+                    }}
+                    className="rounded border-slate-700 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span>Re-theme SVG frame colors to match my dot/eye colors</span>
+                </label>
+
+                {/* Upload custom SVG button */}
+                <label className="flex items-center gap-1.5 text-xs text-indigo-400 hover:text-indigo-300 cursor-pointer bg-slate-900 hover:bg-slate-800 px-2.5 py-1 rounded-lg border border-slate-700 transition">
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Load Custom SVG Template</span>
+                  <input
+                    type="file"
+                    accept=".svg"
+                    className="hidden"
+                    onChange={e => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const reader = new FileReader();
+                      reader.onload = () => {
+                        const raw = reader.result as string;
+                        onChange(prev => ({
+                          ...prev,
+                          svgTemplate: {
+                            enabled: true,
+                            templateId: 'custom-uploaded',
+                            rawSvg: raw,
+                            syncColors: prev.svgTemplate?.syncColors ?? false,
+                          }
+                        }));
+                      };
+                      reader.readAsText(file);
+                    }}
+                  />
+                </label>
+              </div>
+            )}
+          </div>
+
           <div>
             <label className="block text-xs font-semibold text-slate-300 mb-1.5">
-              Outer Frame & Decorative Wreath Style
+              Canvas Frames & Decorative Presets
             </label>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {frameOptions.map(opt => (

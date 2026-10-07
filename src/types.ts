@@ -124,6 +124,14 @@ export interface QRStyleState {
   // Technical
   errorCorrectionLevel: ErrorCorrectionLevel;
 
+  // SVG Template Frame (e.g. from templates/happy_anniversary.svg)
+  svgTemplate?: {
+    enabled: boolean;
+    templateId: string | null;
+    rawSvg: string | null;
+    syncColors: boolean;
+  };
+
   // Frame & Template
   frame: {
     type: FrameType;
@@ -145,4 +153,5 @@ export interface TemplatePreset {
   previewThumbnail?: string;
   style: QRStyleState;
   sampleContent?: Partial<QRContentState>;
+  svgTemplateRaw?: string;
 }
