@@ -10,14 +10,14 @@ import { QRContentState, QRStyleState, TemplatePreset } from './types';
 import { TEMPLATES } from './constants/templates';
 
 export const App: React.FC = () => {
-  // Initialize with the featured Anniversary template (from user's request)
+  // Initialize with standard clean QR (no frame, no decorations)
   const defaultTemplate = TEMPLATES[0];
 
   const [style, setStyle] = useState<QRStyleState>(defaultTemplate.style);
   const [content, setContent] = useState<QRContentState>({
     type: 'url',
-    url: 'https://our-story.love/anniversary',
-    text: 'Happy 5th Anniversary, my love! ❤️',
+    url: 'https://example.com',
+    text: 'Hello World!',
     wifi: {
       ssid: 'HomeSweetHome',
       password: 'loveforever2026',

@@ -41,55 +41,87 @@ export function injectQRIntoSvgTemplate(
   options: SvgInjectOptions = {}
 ): string {
   let result = templateSvg;
-
-  // Normalize qrSvgString: make sure it has width/height or viewBox
   let cleanQrSvg = qrSvgString.trim();
 
-  // 1. Detect me-qr pattern:
-  // e.g. <g transform="translate(470, 480)scale(1.9)" fill="none"><svg width="300" height="300">...</svg></g>
-  const meQrGroupRegex = /(<g transform="translate\([^"]+\)scale\([^"]+\)"[^>]*>)([\s\S]*?)(<\/g>)/;
-  if (meQrGroupRegex.test(result)) {
-    result = result.replace(meQrGroupRegex, (_match, prefix, _inner, suffix) => {
-      return `${prefix}${cleanQrSvg}${suffix}`;
-    });
-  } 
-  // 2. Detect placeholder rect: <rect id="qr-placeholder" x="100" y="100" width="300" height="300" .../>
-  else if (/<rect[^>]*id="(?:qr-placeholder|qr-target|qrcode)"[^>]*\/>/i.test(result)) {
-    const rectRegex = /<rect[^>]*id="(?:qr-placeholder|qr-target|qrcode)"[^>]*\/>/i;
-    const rectMatch = result.match(rectRegex);
-    if (rectMatch) {
-      const tag = rectMatch[0];
-      const xMatch = tag.match(/x="([^"]+)"/);
-      const yMatch = tag.match(/y="([^"]+)"/);
-      const wMatch = tag.match(/width="([^"]+)"/);
-      const hMatch = tag.match(/height="([^"]+)"/);
+  // Try DOMParser if in browser
+  if (typeof DOMParser !== 'undefined') {
+    try {
+      const parser = new DOMParser();
+      const doc = parser.parseFromString(templateSvg, 'image/svg+xml');
+      const qrDoc = parser.parseFromString(cleanQrSvg, 'image/svg+xml');
 
-      const x = xMatch ? xMatch[1] : '0';
-      const y = yMatch ? yMatch[1] : '0';
-      const w = wMatch ? wMatch[1] : '300';
-      const h = hMatch ? hMatch[1] : '300';
+      const parseError = doc.querySelector('parsererror') || qrDoc.querySelector('parsererror');
+      if (!parseError) {
+        // 1. Check placeholder rect: <rect id="qr-placeholder" ...>
+        const placeholder = doc.querySelector('#qr-placeholder, #qr-target, #qrcode');
+        if (placeholder && placeholder.tagName.toLowerCase() === 'rect') {
+          const x = placeholder.getAttribute('x') || '0';
+          const y = placeholder.getAttribute('y') || '0';
+          const w = placeholder.getAttribute('width') || '300';
+          const h = placeholder.getAttribute('height') || '300';
 
-      const replacement = `<g transform="translate(${x}, ${y})"><svg width="${w}" height="${h}" viewBox="0 0 300 300">${cleanQrSvg}</svg></g>`;
-      result = result.replace(rectRegex, replacement);
+          const g = doc.createElementNS('http://www.w3.org/2000/svg', 'g');
+          g.setAttribute('transform', `translate(${x}, ${y})`);
+
+          const qrEl = doc.importNode(qrDoc.documentElement, true);
+          qrEl.setAttribute('width', w);
+          qrEl.setAttribute('height', h);
+          g.appendChild(qrEl);
+
+          placeholder.parentNode?.replaceChild(g, placeholder);
+
+          const serializer = new XMLSerializer();
+          result = serializer.serializeToString(doc);
+        } else {
+          // 2. Check for innermost SVG (me-qr pattern)
+          const allSvgs = doc.querySelectorAll('svg');
+          if (allSvgs.length > 1) {
+            const innerQrSvg = allSvgs[allSvgs.length - 1];
+            const qrEl = doc.importNode(qrDoc.documentElement, true);
+            qrEl.setAttribute('width', '300');
+            qrEl.setAttribute('height', '300');
+
+            innerQrSvg.parentNode?.replaceChild(qrEl, innerQrSvg);
+
+            const serializer = new XMLSerializer();
+            result = serializer.serializeToString(doc);
+          }
+        }
+      }
+    } catch (e) {
+      console.warn('DOMParser injection encountered an issue, using regex replacer:', e);
     }
   }
-  // 3. Detect container group: <g id="qr-container">...</g>
-  else if (/<g[^>]*id="(?:qr-container|qrcode|qr-target)"[^>]*>([\s\S]*?)<\/g>/i.test(result)) {
-    result = result.replace(
-      /(<g[^>]*id="(?:qr-container|qrcode|qr-target)"[^>]*>)([\s\S]*?)(<\/g>)/i,
-      `$1${cleanQrSvg}$3`
-    );
-  }
-  // 4. Detect inner nested <svg width="300" height="300">...</svg>
-  else if (/<svg width="300" height="300"[\s\S]*?<\/svg>/.test(result)) {
-    result = result.replace(/<svg width="300" height="300"[\s\S]*?<\/svg>/, cleanQrSvg);
+
+  // Fallback / Regex replacer if DOMParser didn't update result
+  if (result === templateSvg) {
+    // me-qr pattern: replace inner <svg width="300" height="300">...</svg>
+    const innerQrSvgRegex = /<svg\s+width="300"\s+height="300"[^>]*>[\s\S]*?<\/svg>/i;
+    if (innerQrSvgRegex.test(result)) {
+      result = result.replace(innerQrSvgRegex, cleanQrSvg);
+    } else if (/<rect[^>]*id="(?:qr-placeholder|qr-target|qrcode)"[^>]*\/>/i.test(result)) {
+      const rectRegex = /<rect[^>]*id="(?:qr-placeholder|qr-target|qrcode)"[^>]*\/>/i;
+      const rectMatch = result.match(rectRegex);
+      if (rectMatch) {
+        const tag = rectMatch[0];
+        const xMatch = tag.match(/x="([^"]+)"/);
+        const yMatch = tag.match(/y="([^"]+)"/);
+        const wMatch = tag.match(/width="([^"]+)"/);
+        const hMatch = tag.match(/height="([^"]+)"/);
+
+        const x = xMatch ? xMatch[1] : '0';
+        const y = yMatch ? yMatch[1] : '0';
+        const w = wMatch ? wMatch[1] : '300';
+        const h = hMatch ? hMatch[1] : '300';
+
+        const replacement = `<g transform="translate(${x}, ${y})"><svg width="${w}" height="${h}" viewBox="0 0 300 300">${cleanQrSvg}</svg></g>`;
+        result = result.replace(rectRegex, replacement);
+      }
+    }
   }
 
-  // 5. Optionally harmonize/re-theme template frame colors with chosen user colors
+  // Harmonize frame colors if requested
   if (options.syncColors && options.dotColor && options.cornerColor) {
-    // In happy_anniversary.svg:
-    // .cls-5ann8 is purple (#9f6eff)
-    // .cls-5ann5 is pink (#ff6caf)
     result = result
       .replace(/#9f6eff/gi, options.dotColor)
       .replace(/#ff6caf/gi, options.cornerColor);
@@ -115,21 +147,46 @@ export function renderSvgStringToCanvas(
       return;
     }
 
+    let cleanSvg = svgString;
+    if (!cleanSvg.includes('xmlns="http://www.w3.org/2000/svg"')) {
+      cleanSvg = cleanSvg.replace('<svg', '<svg xmlns="http://www.w3.org/2000/svg"');
+    }
+
     const img = new Image();
-    // Wrap as SVG data URL
-    const blob = new Blob([svgString], { type: 'image/svg+xml;charset=utf-8' });
+    const blob = new Blob([cleanSvg], { type: 'image/svg+xml;charset=utf-8' });
     const url = URL.createObjectURL(blob);
+
+    const cleanup = () => {
+      URL.revokeObjectURL(url);
+    };
 
     img.onload = () => {
       ctx.clearRect(0, 0, targetSize, targetSize);
       ctx.drawImage(img, 0, 0, targetSize, targetSize);
-      URL.revokeObjectURL(url);
+      cleanup();
       resolve(canvas);
     };
 
-    img.onerror = (e) => {
-      URL.revokeObjectURL(url);
-      reject(e);
+    img.onerror = () => {
+      // Fallback: Data URI Base64 encoding
+      try {
+        const base64 = btoa(unescape(encodeURIComponent(cleanSvg)));
+        const fallbackImg = new Image();
+        fallbackImg.onload = () => {
+          ctx.clearRect(0, 0, targetSize, targetSize);
+          ctx.drawImage(fallbackImg, 0, 0, targetSize, targetSize);
+          cleanup();
+          resolve(canvas);
+        };
+        fallbackImg.onerror = (err) => {
+          cleanup();
+          reject(err);
+        };
+        fallbackImg.src = `data:image/svg+xml;base64,${base64}`;
+      } catch (err) {
+        cleanup();
+        reject(err);
+      }
     };
 
     img.src = url;

@@ -71,7 +71,8 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange }) => 
   ];
 
   const frameOptions: { id: FrameType; label: string }[] = [
-    { id: 'anniversary-hearts', label: '❤️ Anniversary Hearts Arc (Example)' },
+    { id: 'none', label: '🚫 No Frame (Pure Standard QR)' },
+    { id: 'anniversary-hearts', label: '❤️ Anniversary Hearts Arc' },
     { id: 'birthday-confetti', label: '🎉 Birthday & Party Confetti' },
     { id: 'scan-me-bottom', label: '🏷️ Classic "SCAN ME" Bottom' },
     { id: 'scan-me-top', label: '🏷️ "SCAN ME" Top Banner' },
@@ -80,7 +81,6 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange }) => 
     { id: 'polaroid', label: '📷 Polaroid Memory Card' },
     { id: 'neon-bracket', label: '⚡ Cyberpunk Neon Brackets' },
     { id: 'minimal-rounded', label: '🔲 Minimal Rounded Border' },
-    { id: 'none', label: '🚫 No Frame (Pure QR Only)' },
   ];
 
   const fontOptions: { id: FrameFont; label: string; fontClass: string }[] = [
@@ -269,10 +269,13 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange }) => 
                   key={opt.id}
                   onClick={() => onChange(prev => ({
                     ...prev,
+                    svgTemplate: opt.id === 'none' 
+                      ? { enabled: false, templateId: null, rawSvg: null, syncColors: false } 
+                      : prev.svgTemplate,
                     frame: { ...prev.frame, type: opt.id }
                   }))}
                   className={`text-left px-3.5 py-2.5 rounded-xl border text-xs font-medium transition ${
-                    style.frame.type === opt.id
+                    (!style.svgTemplate?.enabled && style.frame.type === opt.id)
                       ? 'bg-indigo-950/60 border-indigo-500 text-white ring-1 ring-indigo-500'
                       : 'bg-slate-950/40 border-slate-800 text-slate-300 hover:bg-slate-800/50'
                   }`}

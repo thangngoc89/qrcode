@@ -2,8 +2,52 @@ import { TemplatePreset } from '../types';
 
 export const TEMPLATES: TemplatePreset[] = [
   {
+    id: 'standard-clean',
+    name: 'Standard Clean QR (Default)',
+    category: 'Classic',
+    description: 'Crisp, high-contrast QR code without frames or extra decorations.',
+    style: {
+      dotsType: 'square',
+      cornersSquareType: 'square',
+      cornersDotType: 'square',
+      useGradient: false,
+      gradientType: 'linear',
+      dotColor: '#000000',
+      gradientColor2: '#334155',
+      gradientRotation: 0,
+      cornersSquareColor: '#000000',
+      cornersDotColor: '#000000',
+      backgroundColor: '#ffffff',
+      transparentBackground: false,
+      logoSrc: null,
+      logoSize: 0.2,
+      logoMargin: 4,
+      hideBehindLogo: true,
+      errorCorrectionLevel: 'M',
+      svgTemplate: {
+        enabled: false,
+        templateId: null,
+        rawSvg: null,
+        syncColors: false,
+      },
+      frame: {
+        type: 'none',
+        text: '',
+        subtext: '',
+        fontFamily: 'sans',
+        textColor: '#000000',
+        frameColor: '#000000',
+        accentColor: '#3b82f6',
+      }
+    },
+    sampleContent: {
+      type: 'url',
+      url: 'https://example.com'
+    }
+  },
+  {
     id: 'anniversary-hearts',
-    name: 'Happy Anniversary (Featured)',
+    name: 'Happy Anniversary (me-qr)',
     category: 'Celebration',
     description: 'Pastel purple dots, hot pink target eyes, surrounded by floating hearts and elegant script typography.',
     style: {
