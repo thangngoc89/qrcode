@@ -3,8 +3,15 @@
 @tailwind utilities;
 
 @layer base {
-  body {
-    @apply bg-[#faf8fb] text-slate-800 dark:bg-slate-950 dark:text-slate-100 font-sans transition-colors duration-150;
+  html, body {
+    background-color: #faf8fb;
+    color: #1e293b;
+    font-family: 'Inter', system-ui, sans-serif;
+  }
+
+  html.dark, html.dark body, body.dark {
+    background-color: #020617;
+    color: #f8fafc;
   }
 }
 

@@ -16,11 +16,14 @@ export const App: React.FC = () => {
   });
 
   useEffect(() => {
+    const root = document.documentElement;
     if (isDarkMode) {
-      document.documentElement.classList.add('dark');
+      root.classList.add('dark');
+      document.body.classList.add('dark');
       localStorage.setItem('qr_studio_theme', 'dark');
     } else {
-      document.documentElement.classList.remove('dark');
+      root.classList.remove('dark');
+      document.body.classList.remove('dark');
       localStorage.setItem('qr_studio_theme', 'light');
     }
   }, [isDarkMode]);
