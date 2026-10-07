@@ -1,5 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 export default {
+  darkMode: 'class',
   content: [
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
@@ -13,11 +14,14 @@ export default {
       },
       colors: {
         brand: {
-          50: '#f0f5ff',
-          100: '#e0ecff',
-          500: '#3b82f6',
-          600: '#2563eb',
-          700: '#1d4ed8',
+          50: '#fdf2f8',
+          100: '#fce7f3',
+          200: '#fbcfe8',
+          300: '#f472b6',
+          400: '#e879f9',
+          500: '#ec4899',
+          600: '#db2777',
+          700: '#be185d',
         }
       }
     },

@@ -55,12 +55,9 @@ export const TemplateGallery: React.FC<TemplateGalleryProps> = ({ currentStyle, 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3.5">
         {filteredTemplates.map(t => {
           const isFeatured = t.id === 'anniversary-hearts';
-          const isSelected = t.style.svgTemplate?.enabled
-            ? Boolean(currentStyle.svgTemplate?.enabled)
-            : (!currentStyle.svgTemplate?.enabled &&
-               currentStyle.frame.type === t.style.frame.type &&
-               currentStyle.dotsType === t.style.dotsType &&
-               currentStyle.dotColor === t.style.dotColor);
+          const isSelected = currentStyle.frame.type === t.style.frame.type &&
+            currentStyle.dotsType === t.style.dotsType &&
+            currentStyle.dotColor === t.style.dotColor;
 
           return (
             <div

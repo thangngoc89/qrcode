@@ -5,37 +5,32 @@ import {
   Copy, 
   Printer, 
   Check, 
-  Sparkles, 
-  FileText, 
   ZoomIn,
   ZoomOut,
-  RefreshCw
+  RefreshCw,
+  Scan
 } from 'lucide-react';
 import { QRContentState, QRStyleState } from '../types';
 import { generateQRPayload } from '../utils/qrPayload';
 import { renderComposedQRCanvas } from '../utils/canvasRenderer';
-import { 
-  BUILTIN_SVG_TEMPLATES, 
-  injectQRIntoSvgTemplate, 
-  renderSvgStringToCanvas 
-} from '../utils/svgTemplateEngine';
 
 interface QRPreviewProps {
   content: QRContentState;
   style: QRStyleState;
+  onOpenScanner?: () => void;
 }
 
-export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
+export const QRPreview: React.FC<QRPreviewProps> = ({ content, style, onOpenScanner }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [isRendering, setIsRendering] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [downloadResolution, setDownloadResolution] = useState<number>(2048);
+  const [selectedFormat, setSelectedFormat] = useState<'png' | 'svg' | 'jpeg' | 'webp'>('png');
+  const [selectedSize, setSelectedSize] = useState<number>(1000);
   const [zoomLevel, setZoomLevel] = useState<number>(1);
-  const [composedSvgString, setComposedSvgString] = useState<string | null>(null);
 
   const payload = generateQRPayload(content);
 
-  // Re-render preview whenever payload or style changes
+  // Render preview whenever payload or style changes
   useEffect(() => {
     let isCancelled = false;
 
@@ -43,165 +38,83 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
       try {
         setIsRendering(true);
 
-        const isSvgTemplateMode = style.svgTemplate?.enabled;
-        const templateId = style.svgTemplate?.templateId || 'happy-anniversary-svg';
-        const rawTemplate = style.svgTemplate?.rawSvg || BUILTIN_SVG_TEMPLATES[templateId]?.rawSvg;
+        const qrInstance = new QRCodeStyling({
+          width: 600,
+          height: 600,
+          data: payload,
+          image: style.logoSrc || undefined,
+          dotsOptions: {
+            type: style.dotsType,
+            color: style.dotColor,
+            gradient: style.useGradient
+              ? {
+                  type: style.gradientType,
+                  rotation: (style.gradientRotation * Math.PI) / 180,
+                  colorStops: [
+                    { offset: 0, color: style.dotColor },
+                    { offset: 1, color: style.gradientColor2 }
+                  ]
+                }
+              : undefined
+          },
+          cornersSquareOptions: {
+            type: style.cornersSquareType,
+            color: style.cornersSquareColor
+          },
+          cornersDotOptions: {
+            type: style.cornersDotType,
+            color: style.cornersDotColor
+          },
+          backgroundOptions: {
+            color: style.transparentBackground ? 'transparent' : style.backgroundColor
+          },
+          imageOptions: {
+            crossOrigin: 'anonymous',
+            margin: style.logoMargin,
+            imageSize: style.logoSize,
+            hideBackgroundDots: style.hideBehindLogo
+          },
+          qrOptions: {
+            errorCorrectionLevel: style.errorCorrectionLevel
+          }
+        });
 
-        if (isSvgTemplateMode && rawTemplate) {
-          // 1. Generate clean SVG QR Code at 300x300 for template injection
-          const qrInstance = new QRCodeStyling({
-            width: 300,
-            height: 300,
-            data: payload,
-            image: style.logoSrc || undefined,
-            dotsOptions: {
-              type: style.dotsType,
-              color: style.dotColor,
-              gradient: style.useGradient
-                ? {
-                    type: style.gradientType,
-                    rotation: (style.gradientRotation * Math.PI) / 180,
-                    colorStops: [
-                      { offset: 0, color: style.dotColor },
-                      { offset: 1, color: style.gradientColor2 }
-                    ]
-                  }
-                : undefined
-            },
-            cornersSquareOptions: {
-              type: style.cornersSquareType,
-              color: style.cornersSquareColor
-            },
-            cornersDotOptions: {
-              type: style.cornersDotType,
-              color: style.cornersDotColor
-            },
-            backgroundOptions: {
-              color: style.transparentBackground ? 'transparent' : style.backgroundColor
-            },
-            imageOptions: {
-              crossOrigin: 'anonymous',
-              margin: style.logoMargin,
-              imageSize: style.logoSize,
-              hideBackgroundDots: style.hideBehindLogo
-            },
-            qrOptions: {
-              errorCorrectionLevel: style.errorCorrectionLevel
-            }
+        const rawBlob: any = await qrInstance.getRawData('png');
+        if (!rawBlob || isCancelled) return;
+
+        const blob = rawBlob instanceof Blob ? rawBlob : new Blob([rawBlob as BlobPart], { type: 'image/png' });
+        const objectUrl = URL.createObjectURL(blob);
+        const img = new Image();
+
+        img.onload = async () => {
+          if (isCancelled) {
+            URL.revokeObjectURL(objectUrl);
+            return;
+          }
+
+          const composed = await renderComposedQRCanvas({
+            qrImage: img,
+            style,
+            targetSize: 600
           });
 
-          const svgBlob: any = await qrInstance.getRawData('svg');
-          if (!svgBlob || isCancelled) return;
+          URL.revokeObjectURL(objectUrl);
 
-          const qrSvgText = svgBlob instanceof Blob ? await svgBlob.text() : svgBlob.toString();
-
-          // Inject QR code into the SVG template
-          const composedSvg = injectQRIntoSvgTemplate(rawTemplate, qrSvgText, {
-            dotColor: style.dotColor,
-            cornerColor: style.cornersSquareColor,
-            syncColors: style.svgTemplate?.syncColors
-          });
-
-          if (isCancelled) return;
-          setComposedSvgString(composedSvg);
-
-          // Render composed SVG to Canvas preview at 600px
-          const previewCanvas = await renderSvgStringToCanvas(composedSvg, 600);
           if (isCancelled || !canvasRef.current) return;
 
-          const targetCanvas = canvasRef.current;
-          targetCanvas.width = previewCanvas.width;
-          targetCanvas.height = previewCanvas.height;
+          const previewCanvas = canvasRef.current;
+          previewCanvas.width = composed.width;
+          previewCanvas.height = composed.height;
 
-          const ctx = targetCanvas.getContext('2d');
+          const ctx = previewCanvas.getContext('2d');
           if (ctx) {
-            ctx.clearRect(0, 0, targetCanvas.width, targetCanvas.height);
-            ctx.drawImage(previewCanvas, 0, 0);
+            ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
+            ctx.drawImage(composed, 0, 0);
           }
           setIsRendering(false);
+        };
 
-        } else {
-          // Standard Canvas Frame Mode
-          setComposedSvgString(null);
-
-          const qrInstance = new QRCodeStyling({
-            width: 600,
-            height: 600,
-            data: payload,
-            image: style.logoSrc || undefined,
-            dotsOptions: {
-              type: style.dotsType,
-              color: style.dotColor,
-              gradient: style.useGradient
-                ? {
-                    type: style.gradientType,
-                    rotation: (style.gradientRotation * Math.PI) / 180,
-                    colorStops: [
-                      { offset: 0, color: style.dotColor },
-                      { offset: 1, color: style.gradientColor2 }
-                    ]
-                  }
-                : undefined
-            },
-            cornersSquareOptions: {
-              type: style.cornersSquareType,
-              color: style.cornersSquareColor
-            },
-            cornersDotOptions: {
-              type: style.cornersDotType,
-              color: style.cornersDotColor
-            },
-            backgroundOptions: {
-              color: style.transparentBackground ? 'transparent' : style.backgroundColor
-            },
-            imageOptions: {
-              crossOrigin: 'anonymous',
-              margin: style.logoMargin,
-              imageSize: style.logoSize,
-              hideBackgroundDots: style.hideBehindLogo
-            },
-            qrOptions: {
-              errorCorrectionLevel: style.errorCorrectionLevel
-            }
-          });
-
-          const rawBlob: any = await qrInstance.getRawData('png');
-          if (!rawBlob || isCancelled) return;
-
-          const blob = rawBlob instanceof Blob ? rawBlob : new Blob([rawBlob as BlobPart], { type: 'image/png' });
-          const objectUrl = URL.createObjectURL(blob);
-          const img = new Image();
-
-          img.onload = async () => {
-            if (isCancelled) {
-              URL.revokeObjectURL(objectUrl);
-              return;
-            }
-
-            const composed = await renderComposedQRCanvas({
-              qrImage: img,
-              style,
-              targetSize: 600
-            });
-
-            URL.revokeObjectURL(objectUrl);
-
-            if (isCancelled || !canvasRef.current) return;
-
-            const previewCanvas = canvasRef.current;
-            previewCanvas.width = composed.width;
-            previewCanvas.height = composed.height;
-
-            const ctx = previewCanvas.getContext('2d');
-            if (ctx) {
-              ctx.clearRect(0, 0, previewCanvas.width, previewCanvas.height);
-              ctx.drawImage(composed, 0, 0);
-            }
-            setIsRendering(false);
-          };
-
-          img.src = objectUrl;
-        }
+        img.src = objectUrl;
       } catch (err) {
         console.error('Failed to generate QR preview:', err);
         setIsRendering(false);
@@ -215,29 +128,19 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
     };
   }, [payload, style]);
 
-  // High-Resolution Export
-  const handleDownload = async (format: 'png' | 'jpeg' | 'webp') => {
+  // Main Download Trigger
+  const handleDownload = async () => {
+    if (selectedFormat === 'svg') {
+      await handleDownloadSVG();
+      return;
+    }
+
     try {
       setIsRendering(true);
 
-      if (style.svgTemplate?.enabled && composedSvgString) {
-        // High-res rasterization of composed SVG
-        const highResCanvas = await renderSvgStringToCanvas(composedSvgString, downloadResolution);
-        const mime = format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
-        const dataUrl = highResCanvas.toDataURL(mime, 0.95);
-
-        const link = document.createElement('a');
-        link.download = `qrcode-template-${downloadResolution}px.${format}`;
-        link.href = dataUrl;
-        link.click();
-        setIsRendering(false);
-        return;
-      }
-
-      // Standard Canvas mode high-res export
       const qrInstance = new QRCodeStyling({
-        width: downloadResolution,
-        height: downloadResolution,
+        width: selectedSize,
+        height: selectedSize,
         data: payload,
         image: style.logoSrc || undefined,
         dotsOptions: {
@@ -287,15 +190,15 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
         const composedCanvas = await renderComposedQRCanvas({
           qrImage: img,
           style,
-          targetSize: downloadResolution
+          targetSize: selectedSize
         });
         URL.revokeObjectURL(objectUrl);
 
-        const mime = format === 'jpeg' ? 'image/jpeg' : format === 'webp' ? 'image/webp' : 'image/png';
+        const mime = selectedFormat === 'jpeg' ? 'image/jpeg' : selectedFormat === 'webp' ? 'image/webp' : 'image/png';
         const dataUrl = composedCanvas.toDataURL(mime, 0.95);
 
         const link = document.createElement('a');
-        link.download = `qrcode-${style.frame.type}-${downloadResolution}px.${format}`;
+        link.download = `qrcode-${style.frame.type}-${selectedSize}px.${selectedFormat}`;
         link.href = dataUrl;
         link.click();
         setIsRendering(false);
@@ -310,18 +213,6 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
 
   const handleDownloadSVG = async () => {
     try {
-      if (style.svgTemplate?.enabled && composedSvgString) {
-        // Download authentic vector SVG template directly
-        const blob = new Blob([composedSvgString], { type: 'image/svg+xml;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement('a');
-        link.download = `qrcode-vector-anniversary-template.svg`;
-        link.href = url;
-        link.click();
-        URL.revokeObjectURL(url);
-        return;
-      }
-
       const qrInstance = new QRCodeStyling({
         width: 1024,
         height: 1024,
@@ -387,7 +278,7 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
           new ClipboardItem({ 'image/png': blob })
         ]);
         setCopied(true);
-        setTimeout(() => setCopied(false), 2200);
+        setTimeout(() => setCopied(false), 2000);
       }, 'image/png');
     } catch (err) {
       console.error('Clipboard copy failed:', err);
@@ -418,36 +309,33 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
   };
 
   return (
-    <div className="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl flex flex-col h-full sticky top-20">
-      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-800">
-        <div>
-          <h2 className="text-base font-semibold text-white flex items-center gap-2">
-            <span>Live Preview</span>
-            {isRendering && <RefreshCw className="w-3.5 h-3.5 text-indigo-400 animate-spin" />}
+    <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl p-5 shadow-sm flex flex-col sticky top-20">
+      {/* Header (Step 3) */}
+      <div className="flex items-center justify-between pb-3 mb-4 border-b border-slate-200 dark:border-slate-800">
+        <div className="flex items-center gap-2.5">
+          <div className="w-6 h-6 rounded-full bg-slate-900 text-white dark:bg-white dark:text-slate-900 font-extrabold flex items-center justify-center text-xs">
+            3
+          </div>
+          <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
+            <span>Generate & download QR</span>
+            {isRendering && <RefreshCw className="w-3.5 h-3.5 text-pink-500 animate-spin" />}
           </h2>
-          <p className="text-xs text-slate-400">
-            {style.svgTemplate?.enabled ? (
-              <span className="text-pink-400 font-medium">Vector SVG Template Engine active</span>
-            ) : (
-              'High-res client-side rendering'
-            )}
-          </p>
         </div>
 
-        <div className="flex items-center gap-1 bg-slate-950 p-1 rounded-lg border border-slate-800">
+        <div className="flex items-center gap-1 bg-slate-100 dark:bg-slate-950 p-1 rounded-lg border border-slate-200 dark:border-slate-800">
           <button
             onClick={() => setZoomLevel(prev => Math.max(0.7, prev - 0.15))}
-            className="p-1 hover:text-white text-slate-400 rounded"
+            className="p-1 hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-slate-400 rounded"
             title="Zoom Out"
           >
             <ZoomOut className="w-3.5 h-3.5" />
           </button>
-          <span className="text-[10px] text-slate-400 px-1 font-mono">
+          <span className="text-[10px] text-slate-500 dark:text-slate-400 px-1 font-mono">
             {Math.round(zoomLevel * 100)}%
           </span>
           <button
             onClick={() => setZoomLevel(prev => Math.min(1.4, prev + 0.15))}
-            className="p-1 hover:text-white text-slate-400 rounded"
+            className="p-1 hover:text-slate-900 dark:hover:text-white text-slate-500 dark:text-slate-400 rounded"
             title="Zoom In"
           >
             <ZoomIn className="w-3.5 h-3.5" />
@@ -455,13 +343,12 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
         </div>
       </div>
 
-      {/* Main Canvas Display Area */}
-      <div className="flex-1 flex items-center justify-center min-h-[360px] max-h-[460px] bg-slate-950/80 rounded-xl p-4 border border-slate-800/80 overflow-hidden relative group">
-        {/* Subtle checkerboard pattern for transparency */}
+      {/* Main Preview Area */}
+      <div className="flex-1 flex items-center justify-center min-h-[340px] max-h-[420px] bg-slate-50 dark:bg-slate-950/80 rounded-2xl p-4 border border-slate-200/80 dark:border-slate-800/80 overflow-hidden relative">
         <div 
           className="absolute inset-0 opacity-10 pointer-events-none"
           style={{
-            backgroundImage: `radial-gradient(#475569 1px, transparent 1px)`,
+            backgroundImage: `radial-gradient(#94a3b8 1px, transparent 1px)`,
             backgroundSize: '16px 16px'
           }}
         />
@@ -472,7 +359,7 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
         >
           <canvas
             ref={canvasRef}
-            className="rounded-lg shadow-2xl max-w-full max-h-[380px] object-contain transition-all"
+            className="rounded-xl shadow-lg max-w-full max-h-[350px] object-contain transition-all"
             style={{
               filter: isRendering ? 'opacity(0.85) blur(0.5px)' : 'none'
             }}
@@ -480,91 +367,92 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style }) => {
         </div>
       </div>
 
-      {/* Export & Download Controls */}
-      <div className="mt-4 space-y-3">
-        <div className="flex items-center gap-2">
-          <label className="text-xs text-slate-400 flex items-center gap-1">
-            <span>Export Quality:</span>
-          </label>
-          <select
-            value={downloadResolution}
-            onChange={e => setDownloadResolution(Number(e.target.value))}
-            className="bg-slate-950 border border-slate-800 rounded-lg px-2.5 py-1 text-xs text-slate-200 focus:outline-none focus:border-indigo-500 font-mono"
-          >
-            <option value="1024">1024 × 1024 px (Web & Screen)</option>
-            <option value="2048">2048 × 2048 px (Sharp Print / HD)</option>
-            <option value="4096">4096 × 4096 px (Ultra 4K / Billboard)</option>
-            <option value="600">600 × 600 px (Fast Small)</option>
-          </select>
+      {/* Download Controls Section (Matches user's screenshot layout) */}
+      <div className="mt-5 space-y-3.5">
+        {/* Dropdowns Row: Format & Size side-by-side */}
+        <div className="grid grid-cols-2 gap-3">
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Format
+            </label>
+            <select
+              value={selectedFormat}
+              onChange={e => setSelectedFormat(e.target.value as any)}
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-pink-500"
+            >
+              <option value="png">PNG (Raster)</option>
+              <option value="svg">SVG (Vector Lossless)</option>
+              <option value="jpeg">JPEG</option>
+              <option value="webp">WebP</option>
+            </select>
+          </div>
+
+          <div>
+            <label className="block text-[11px] font-semibold text-slate-600 dark:text-slate-400 mb-1">
+              Size
+            </label>
+            <select
+              value={selectedSize}
+              onChange={e => setSelectedSize(Number(e.target.value))}
+              className="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-2 text-xs font-semibold text-slate-900 dark:text-slate-100 focus:outline-none focus:border-pink-500 font-mono"
+            >
+              <option value="1000">1000x1000 (Standard)</option>
+              <option value="2000">2000x2000 (High-Res Print)</option>
+              <option value="4000">4000x4000 (Ultra HD)</option>
+              <option value="600">600x600 (Small)</option>
+            </select>
+          </div>
         </div>
 
-        {/* Primary Download Buttons */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-          <button
-            onClick={() => handleDownload('png')}
-            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold text-xs transition shadow-lg shadow-indigo-600/20 active:scale-[0.98]"
-          >
-            <Download className="w-3.5 h-3.5" />
-            <span>PNG</span>
-          </button>
+        {/* Large Pink "Download QR CODE" Button */}
+        <button
+          onClick={handleDownload}
+          className="w-full py-3.5 rounded-xl bg-pink-600 hover:bg-pink-500 active:scale-[0.99] text-white font-extrabold text-sm tracking-wide transition shadow-lg shadow-pink-500/25 flex items-center justify-center gap-2"
+        >
+          <Download className="w-4 h-4" />
+          <span>Download QR CODE</span>
+        </button>
 
-          <button
-            onClick={handleDownloadSVG}
-            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs border border-slate-700 transition active:scale-[0.98]"
-            title="Download lossless vector SVG"
-          >
-            <Download className="w-3.5 h-3.5 text-cyan-400" />
-            <span>SVG Vector</span>
-          </button>
-
-          <button
-            onClick={() => handleDownload('jpeg')}
-            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs border border-slate-700 transition active:scale-[0.98]"
-          >
-            <Download className="w-3.5 h-3.5 text-amber-400" />
-            <span>JPEG</span>
-          </button>
-
+        {/* Secondary quick action buttons */}
+        <div className="grid grid-cols-3 gap-2 pt-0.5">
           <button
             onClick={handleCopyToClipboard}
-            className="flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-100 font-semibold text-xs border border-slate-700 transition active:scale-[0.98]"
+            className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition"
           >
             {copied ? (
               <>
-                <Check className="w-3.5 h-3.5 text-emerald-400" />
-                <span className="text-emerald-400">Copied!</span>
+                <Check className="w-3.5 h-3.5 text-emerald-500" />
+                <span className="text-emerald-600 dark:text-emerald-400">Copied!</span>
               </>
             ) : (
               <>
-                <Copy className="w-3.5 h-3.5 text-slate-300" />
+                <Copy className="w-3.5 h-3.5 text-slate-500" />
                 <span>Copy</span>
               </>
             )}
           </button>
+
+          <button
+            onClick={handlePrint}
+            className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition"
+          >
+            <Printer className="w-3.5 h-3.5 text-slate-500" />
+            <span>Print</span>
+          </button>
+
+          <button
+            onClick={onOpenScanner}
+            className="flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-300 font-semibold text-xs border border-slate-200 dark:border-slate-700 transition"
+          >
+            <Scan className="w-3.5 h-3.5 text-pink-500" />
+            <span>Verify</span>
+          </button>
         </div>
 
-        {/* Print Option */}
-        <button
-          onClick={handlePrint}
-          className="w-full flex items-center justify-center gap-1.5 py-1.5 rounded-lg text-xs text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition"
-        >
-          <Printer className="w-3.5 h-3.5" />
-          <span>Print QR Directly</span>
-        </button>
-
-        {/* Payload Peek */}
-        <div className="p-3 bg-slate-950/70 rounded-xl border border-slate-800/80 text-[11px] text-slate-400">
-          <div className="flex items-center justify-between mb-1">
-            <span className="font-semibold text-slate-300 flex items-center gap-1">
-              <FileText className="w-3 h-3 text-indigo-400" />
-              Encoded Payload:
-            </span>
-            <span className="font-mono text-[10px] text-slate-500">{payload.length} chars</span>
-          </div>
-          <p className="font-mono text-slate-300 truncate bg-slate-900 px-2 py-1 rounded border border-slate-800">
-            {payload}
-          </p>
-        </div>
+        {/* Footer info notice */}
+        <p className="text-[11px] text-center text-slate-400 dark:text-slate-500 pt-1">
+          100% Free client-side export • No limits • Vector print-ready
+        </p>
       </div>
     </div>
   );

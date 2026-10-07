@@ -24,12 +24,6 @@ export const TEMPLATES: TemplatePreset[] = [
       logoMargin: 4,
       hideBehindLogo: true,
       errorCorrectionLevel: 'M',
-      svgTemplate: {
-        enabled: false,
-        templateId: null,
-        rawSvg: null,
-        syncColors: false,
-      },
       frame: {
         type: 'none',
         text: '',
@@ -37,7 +31,7 @@ export const TEMPLATES: TemplatePreset[] = [
         fontFamily: 'sans',
         textColor: '#000000',
         frameColor: '#000000',
-        accentColor: '#3b82f6',
+        accentColor: '#ec4899',
       }
     },
     sampleContent: {
@@ -56,11 +50,11 @@ export const TEMPLATES: TemplatePreset[] = [
       cornersDotType: 'dot',
       useGradient: false,
       gradientType: 'linear',
-      dotColor: '#9f6eff',
+      dotColor: '#8b5cf6',
       gradientColor2: '#a855f7',
       gradientRotation: 45,
-      cornersSquareColor: '#ff6caf',
-      cornersDotColor: '#ff6caf',
+      cornersSquareColor: '#f43f5e',
+      cornersDotColor: '#f43f5e',
       backgroundColor: '#ffffff',
       transparentBackground: false,
       logoSrc: null,
@@ -68,20 +62,14 @@ export const TEMPLATES: TemplatePreset[] = [
       logoMargin: 6,
       hideBehindLogo: true,
       errorCorrectionLevel: 'H',
-      svgTemplate: {
-        enabled: true,
-        templateId: 'happy-anniversary-svg',
-        rawSvg: null,
-        syncColors: false,
-      },
       frame: {
         type: 'anniversary-hearts',
         text: 'Happy Anniversary',
         subtext: '',
         fontFamily: 'script',
-        textColor: '#9f6eff',
-        frameColor: '#ff6caf',
-        accentColor: '#9f6eff',
+        textColor: '#8b5cf6',
+        frameColor: '#f43f5e',
+        accentColor: '#8b5cf6',
       }
     },
     sampleContent: {

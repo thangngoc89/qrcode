@@ -1,16 +1,31 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Header } from './components/Header';
-import { TemplateGallery } from './components/TemplateGallery';
 import { ContentEditor } from './components/ContentEditor';
 import { StyleEditor } from './components/StyleEditor';
 import { QRPreview } from './components/QRPreview';
 import { QRScannerModal } from './components/QRScannerModal';
 import { SavedPresetsModal } from './components/SavedPresetsModal';
-import { QRContentState, QRStyleState, TemplatePreset } from './types';
+import { QRContentState, QRStyleState } from './types';
 import { TEMPLATES } from './constants/templates';
 
 export const App: React.FC = () => {
-  // Initialize with standard clean QR (no frame, no decorations)
+  // Light / Dark UI mode state (Default to Light mode matching user screenshot)
+  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
+    const saved = localStorage.getItem('qr_studio_theme');
+    return saved === 'dark';
+  });
+
+  useEffect(() => {
+    if (isDarkMode) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('qr_studio_theme', 'dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('qr_studio_theme', 'light');
+    }
+  }, [isDarkMode]);
+
+  // Default to standard clean QR code (no frame, no decorations)
   const defaultTemplate = TEMPLATES[0];
 
   const [style, setStyle] = useState<QRStyleState>(defaultTemplate.style);
@@ -19,8 +34,8 @@ export const App: React.FC = () => {
     url: 'https://example.com',
     text: 'Hello World!',
     wifi: {
-      ssid: 'HomeSweetHome',
-      password: 'loveforever2026',
+      ssid: 'CoffeeShop-Guest',
+      password: 'CoffeePassword2026',
       encryption: 'WPA',
       hidden: false
     },
@@ -30,102 +45,109 @@ export const App: React.FC = () => {
       phone: '+1 (555) 012-3456',
       mobile: '+1 (555) 012-7890',
       email: 'emily@example.com',
-      organization: 'Studio Creative',
+      organization: 'Design Studio',
       title: 'Art Director',
       url: 'https://emilyclark.design',
       street: '124 Blossom Lane',
       city: 'Portland',
       country: 'USA',
-      note: 'Met at Design Gala'
+      note: 'Met at Design Summit'
     },
     email: {
-      email: 'anniversary@ourfamily.com',
-      subject: 'Happy Anniversary Wishes!',
-      body: 'Wishing you both a wonderful year ahead!'
+      email: 'contact@example.com',
+      subject: 'Inquiry from QR',
+      body: 'Hello, I scanned your QR code!'
     },
     sms: {
       phone: '+15551234567',
-      message: 'Happy Anniversary! Can’t wait to celebrate!'
+      message: 'Hello from QR code!'
     },
     whatsapp: {
       phone: '15551234567',
-      message: 'Happy Anniversary! Here is the link to our video greeting!'
+      message: 'Hello! I scanned your QR code.'
     },
     event: {
-      title: '5th Anniversary Celebration Dinner',
-      location: 'The Glasshouse Terrace',
-      start: '2026-10-18T19:00',
-      end: '2026-10-18T23:00',
-      description: 'Join us for drinks, dining, and fond memories.'
+      title: 'Special Event Celebration',
+      location: 'Grand Ballroom Terrace',
+      start: '2026-10-18T18:00',
+      end: '2026-10-18T22:00',
+      description: 'Join us for dining and celebration.'
     },
     crypto: {
       currency: 'bitcoin',
       address: '1A1zP1eP5QGefi2DMPTfTL5SLmv7DivfNa',
       amount: '0.005',
-      message: 'Gift for the happy couple'
+      message: 'Payment via QR'
     }
   });
 
   const [isScannerOpen, setIsScannerOpen] = useState(false);
   const [isPresetsOpen, setIsPresetsOpen] = useState(false);
 
-  const handleApplyTemplate = (template: TemplatePreset) => {
-    setStyle(template.style);
-    if (template.sampleContent) {
-      setContent(prev => ({
-        ...prev,
-        ...template.sampleContent
-      }));
-    }
+  const handleResetSettings = () => {
+    setStyle(defaultTemplate.style);
   };
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans selection:bg-indigo-500 selection:text-white">
+    <div className="min-h-screen bg-[#faf8fb] dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors selection:bg-pink-500 selection:text-white">
       <Header
+        isDarkMode={isDarkMode}
+        onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
         onOpenScanner={() => setIsScannerOpen(true)}
         onOpenPresets={() => setIsPresetsOpen(true)}
       />
 
-      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-6">
-        {/* me-qr style Template Gallery Carousel / Grid */}
-        <TemplateGallery
-          currentStyle={style}
-          onApplyTemplate={handleApplyTemplate}
-        />
+      <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Hero Title (matching screenshot) */}
+        <div className="text-center mb-8">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            Create & Customize Dynamic QR Code for{' '}
+            <span className="bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 bg-clip-text text-transparent">
+              FREE
+            </span>
+          </h1>
+          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-2 font-medium">
+            Easily generate, manage and customize your QR codes purely client-side
+          </p>
+        </div>
 
-        {/* 2-Column Core Interface */}
+        {/* 1 -> 2 -> 3 Step Layout (matching screenshot) */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-          {/* Left Column: Content Data & Style Customizer */}
+          {/* Left Column: Step 1 (Content) & Step 2 (Customize) */}
           <div className="lg:col-span-7 space-y-6">
+            {/* Step 1: Add Content */}
             <ContentEditor
               content={content}
               onChange={setContent}
             />
 
+            {/* Step 2: Customize */}
             <StyleEditor
               style={style}
               onChange={setStyle}
+              onReset={handleResetSettings}
             />
           </div>
 
-          {/* Right Column: Sticky Live Canvas Preview & High-Res Downloader */}
+          {/* Right Column: Step 3 (Generate & download QR) */}
           <div className="lg:col-span-5">
             <QRPreview
               content={content}
               style={style}
+              onOpenScanner={() => setIsScannerOpen(true)}
             />
           </div>
         </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-900 bg-slate-950 py-6 mt-12 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 mt-12 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p>
-            QR Studio Pro — 100% Client-Side. No telemetry, no backend, zero data transmitted to servers.
+            QR Studio — 100% Client-Side. No telemetry, no backend, zero tracking.
           </p>
           <div className="flex items-center gap-4 text-slate-400">
-            <span>Self-Hosted Ready (Static HTML/CSS/JS or Docker)</span>
+            <span>Pink Theme Active • Light & Dark Mode Enabled</span>
           </div>
         </div>
       </footer>
@@ -149,4 +171,5 @@ export const App: React.FC = () => {
     </div>
   );
 };
+
 export default App;

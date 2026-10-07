@@ -130,20 +130,20 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose 
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative">
         <button
           onClick={() => {
             stopCamera();
             onClose();
           }}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <h3 className="text-lg font-bold text-white mb-1">Verify & Test QR Code</h3>
-        <p className="text-xs text-slate-400 mb-5">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">Verify & Test QR Code</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-5">
           Scan using your camera or upload any generated QR code image to test readability.
         </p>
 
@@ -152,7 +152,7 @@ export const QRScannerModal: React.FC<QRScannerModalProps> = ({ isOpen, onClose 
           {!isCameraActive ? (
             <button
               onClick={startCamera}
-              className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition"
+              className="flex-1 flex items-center justify-center gap-2 py-2 px-3 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold transition"
             >
               <Camera className="w-4 h-4" />
               <span>Use Camera</span>

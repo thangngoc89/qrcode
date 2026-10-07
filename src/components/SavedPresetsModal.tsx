@@ -112,39 +112,39 @@ export const SavedPresetsModal: React.FC<SavedPresetsModalProps> = ({
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-800 rounded-2xl max-w-lg w-full p-6 shadow-2xl relative flex flex-col max-h-[85vh]">
+    <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-3xl max-w-lg w-full p-6 shadow-2xl relative flex flex-col max-h-[85vh]">
         <button
           onClick={onClose}
-          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition"
+          className="absolute top-4 right-4 p-1.5 rounded-lg text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-slate-800 transition"
         >
           <X className="w-5 h-5" />
         </button>
 
-        <h3 className="text-lg font-bold text-white mb-1">My Saved QR Presets</h3>
-        <p className="text-xs text-slate-400 mb-4">
+        <h3 className="text-lg font-bold text-slate-900 dark:text-white mb-1">My Saved QR Presets</h3>
+        <p className="text-xs text-slate-500 dark:text-slate-400 mb-4">
           Save your current customized layout or reload previous creations (stored in browser local storage).
         </p>
 
         {toastMsg && (
-          <div className="mb-3 px-3 py-1.5 rounded-lg bg-emerald-500/20 text-emerald-300 text-xs flex items-center gap-1.5 border border-emerald-500/30">
+          <div className="mb-3 px-3 py-1.5 rounded-lg bg-pink-500/20 text-pink-600 dark:text-pink-300 text-xs flex items-center gap-1.5 border border-pink-500/30">
             <Check className="w-3.5 h-3.5" />
             <span>{toastMsg}</span>
           </div>
         )}
 
         {/* Save Current Design Box */}
-        <div className="p-3.5 bg-slate-950/70 border border-slate-800 rounded-xl mb-4 flex items-center gap-2">
+        <div className="p-3 bg-slate-50 dark:bg-slate-950/70 border border-slate-200 dark:border-slate-800 rounded-2xl mb-4 flex items-center gap-2">
           <input
             type="text"
             value={newPresetName}
             onChange={e => setNewPresetName(e.target.value)}
             placeholder="Name your design (e.g. My Anniversary Card)..."
-            className="flex-1 bg-slate-900 border border-slate-700 rounded-lg px-3 py-1.5 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-indigo-500"
+            className="flex-1 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 rounded-xl px-3 py-1.5 text-xs text-slate-900 dark:text-slate-100 placeholder-slate-400 focus:outline-none focus:border-pink-500"
           />
           <button
             onClick={handleSaveCurrent}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-pink-600 hover:bg-pink-500 text-white text-xs font-semibold transition"
           >
             <Save className="w-3.5 h-3.5" />
             <span>Save</span>
