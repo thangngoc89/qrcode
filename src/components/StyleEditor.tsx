@@ -216,7 +216,12 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onRes
                       if (t.id === 'none') {
                         onChange(prev => ({
                           ...prev,
-                          frame: { ...prev.frame, type: 'none' }
+                          frame: {
+                            ...prev.frame,
+                            type: 'none',
+                            text: '',
+                            subtext: ''
+                          }
                         }));
                       } else if (t.id === 'anniversary-hearts') {
                         onChange(prev => ({
@@ -230,12 +235,125 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onRes
                           errorCorrectionLevel: 'H',
                           frame: {
                             type: 'anniversary-hearts',
-                            text: prev.frame.text || 'Happy Anniversary',
+                            text: 'Happy Anniversary',
                             subtext: '',
                             fontFamily: 'script',
                             textColor: '#8b5cf6',
                             frameColor: '#f43f5e',
                             accentColor: '#8b5cf6',
+                          }
+                        }));
+                      } else if (t.id === 'birthday-confetti') {
+                        onChange(prev => ({
+                          ...prev,
+                          dotsType: 'rounded',
+                          cornersSquareType: 'extra-rounded',
+                          cornersDotType: 'dot',
+                          dotColor: '#ea580c',
+                          cornersSquareColor: '#0284c7',
+                          cornersDotColor: '#ea580c',
+                          frame: {
+                            ...prev.frame,
+                            type: 'birthday-confetti',
+                            text: 'Happy Birthday!',
+                            subtext: 'Scan to RSVP',
+                            fontFamily: 'display',
+                            textColor: '#0284c7',
+                            frameColor: '#f59e0b',
+                            accentColor: '#ec4899',
+                          }
+                        }));
+                      } else if (t.id === 'scan-me-bottom') {
+                        onChange(prev => ({
+                          ...prev,
+                          frame: {
+                            ...prev.frame,
+                            type: 'scan-me-bottom',
+                            text: 'SCAN ME',
+                            subtext: '',
+                            fontFamily: 'display',
+                            textColor: '#ffffff',
+                            frameColor: '#0f172a',
+                            badgeColor: '#0f172a'
+                          }
+                        }));
+                      } else if (t.id === 'scan-me-top') {
+                        onChange(prev => ({
+                          ...prev,
+                          frame: {
+                            ...prev.frame,
+                            type: 'scan-me-top',
+                            text: 'SCAN ME',
+                            subtext: '',
+                            fontFamily: 'display',
+                            textColor: '#ffffff',
+                            frameColor: '#0f172a',
+                            badgeColor: '#0f172a'
+                          }
+                        }));
+                      } else if (t.id === 'restaurant-menu') {
+                        onChange(prev => ({
+                          ...prev,
+                          frame: {
+                            ...prev.frame,
+                            type: 'restaurant-menu',
+                            text: 'SCAN FOR MENU',
+                            subtext: 'Food • Drinks • Desserts',
+                            fontFamily: 'serif',
+                            textColor: '#431407',
+                            frameColor: '#c2410c'
+                          }
+                        }));
+                      } else if (t.id === 'wifi-card') {
+                        onChange(prev => ({
+                          ...prev,
+                          frame: {
+                            ...prev.frame,
+                            type: 'wifi-card',
+                            text: 'FREE GUEST WI-FI',
+                            subtext: 'Scan to Connect Instantly',
+                            fontFamily: 'display',
+                            textColor: '#1e293b',
+                            frameColor: '#2563eb'
+                          }
+                        }));
+                      } else if (t.id === 'polaroid') {
+                        onChange(prev => ({
+                          ...prev,
+                          frame: {
+                            ...prev.frame,
+                            type: 'polaroid',
+                            text: 'Our Best Memories ✨',
+                            subtext: '',
+                            fontFamily: 'script',
+                            textColor: '#292524',
+                            frameColor: '#e7e5e4'
+                          }
+                        }));
+                      } else if (t.id === 'neon-bracket') {
+                        onChange(prev => ({
+                          ...prev,
+                          frame: {
+                            ...prev.frame,
+                            type: 'neon-bracket',
+                            text: '[ ACCESS PORTAL ]',
+                            subtext: '',
+                            fontFamily: 'display',
+                            textColor: '#22d3ee',
+                            frameColor: '#06b6d4'
+                          }
+                        }));
+                      } else if (t.id === 'minimal-rounded') {
+                        onChange(prev => ({
+                          ...prev,
+                          frame: {
+                            ...prev.frame,
+                            type: 'minimal-rounded',
+                            text: 'SAVE CONTACT',
+                            subtext: 'Scan to add contact',
+                            fontFamily: 'sans',
+                            textColor: '#064e3b',
+                            frameColor: '#059669'
                           }
                         }));
                       } else {
@@ -244,7 +362,8 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onRes
                           frame: {
                             ...prev.frame,
                             type: t.id,
-                            text: prev.frame.text || (t.id === 'birthday-confetti' ? 'Happy Birthday!' : 'SCAN ME')
+                            text: '',
+                            subtext: ''
                           }
                         }));
                       }

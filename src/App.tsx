@@ -9,24 +9,12 @@ import { QRContentState, QRStyleState } from './types';
 import { TEMPLATES } from './constants/templates';
 
 export const App: React.FC = () => {
-  // Light / Dark UI mode state (Default to Light mode matching user screenshot)
-  const [isDarkMode, setIsDarkMode] = useState<boolean>(() => {
-    const saved = localStorage.getItem('qr_studio_theme');
-    return saved === 'dark';
-  });
-
+  // Always clean light theme as default
   useEffect(() => {
-    const root = document.documentElement;
-    if (isDarkMode) {
-      root.classList.add('dark');
-      document.body.classList.add('dark');
-      localStorage.setItem('qr_studio_theme', 'dark');
-    } else {
-      root.classList.remove('dark');
-      document.body.classList.remove('dark');
-      localStorage.setItem('qr_studio_theme', 'light');
-    }
-  }, [isDarkMode]);
+    document.documentElement.classList.remove('dark');
+    document.body.classList.remove('dark');
+    localStorage.removeItem('qr_studio_theme');
+  }, []);
 
   // Default to standard clean QR code (no frame, no decorations)
   const defaultTemplate = TEMPLATES[0];
@@ -92,10 +80,8 @@ export const App: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#faf8fb] dark:bg-slate-950 text-slate-800 dark:text-slate-100 flex flex-col font-sans transition-colors selection:bg-pink-500 selection:text-white">
+    <div className="min-h-screen bg-[#faf8fb] text-slate-800 flex flex-col font-sans selection:bg-pink-500 selection:text-white">
       <Header
-        isDarkMode={isDarkMode}
-        onToggleDarkMode={() => setIsDarkMode(prev => !prev)}
         onOpenScanner={() => setIsScannerOpen(true)}
         onOpenPresets={() => setIsPresetsOpen(true)}
       />
@@ -103,13 +89,13 @@ export const App: React.FC = () => {
       <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {/* Hero Title (matching screenshot) */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+          <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900">
             Create & Customize Dynamic QR Code for{' '}
             <span className="bg-gradient-to-r from-pink-500 via-rose-500 to-purple-600 bg-clip-text text-transparent">
               FREE
             </span>
           </h1>
-          <p className="text-sm sm:text-base text-slate-500 dark:text-slate-400 mt-2 font-medium">
+          <p className="text-sm sm:text-base text-slate-500 mt-2 font-medium">
             Easily generate, manage and customize your QR codes purely client-side
           </p>
         </div>
@@ -144,13 +130,13 @@ export const App: React.FC = () => {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 py-6 mt-12 text-center text-xs text-slate-500">
+      <footer className="border-t border-slate-200 bg-white py-6 mt-12 text-center text-xs text-slate-500">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
           <p>
             QR Studio — 100% Client-Side. No telemetry, no backend, zero tracking.
           </p>
           <div className="flex items-center gap-4 text-slate-400">
-            <span>Pink Theme Active • Light & Dark Mode Enabled</span>
+            <span>Pink Theme Active • Pure Light UI</span>
           </div>
         </div>
       </footer>

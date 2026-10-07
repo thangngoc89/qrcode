@@ -427,29 +427,37 @@ export async function renderComposedQRCanvas(options: ComposeOptions): Promise<H
     }
   } else if (frameType === 'restaurant-menu') {
     // Top banner
-    ctx.save();
-    const topFontSize = Math.round(targetSize * 0.058);
-    ctx.font = `700 ${topFontSize}px ${fontFace}`;
-    ctx.fillStyle = primaryAccent;
-    ctx.textAlign = 'center';
-    ctx.fillText(text || 'SCAN FOR MENU', canvasWidth / 2, canvasHeight * 0.12);
+    if (text) {
+      ctx.save();
+      const topFontSize = Math.round(targetSize * 0.058);
+      ctx.font = `700 ${topFontSize}px ${fontFace}`;
+      ctx.fillStyle = primaryAccent;
+      ctx.textAlign = 'center';
+      ctx.fillText(text, canvasWidth / 2, canvasHeight * 0.12);
+      ctx.restore();
+    }
 
     if (subtext) {
+      ctx.save();
       const subFontSize = Math.round(targetSize * 0.035);
       ctx.font = `500 ${subFontSize}px Inter, sans-serif`;
       ctx.fillStyle = '#78350f';
+      ctx.textAlign = 'center';
       ctx.fillText(subtext, canvasWidth / 2, qrY + qrSize + targetSize * 0.06);
+      ctx.restore();
     }
-    ctx.restore();
   } else if (frameType === 'wifi-card') {
     // Top WiFi text
-    ctx.save();
-    const topFontSize = Math.round(targetSize * 0.045);
-    ctx.font = `800 ${topFontSize}px ${fontFace}`;
-    ctx.fillStyle = '#ffffff';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText(text || 'FREE GUEST WI-FI', canvasWidth / 2, targetSize * 0.12);
+    if (text) {
+      ctx.save();
+      const topFontSize = Math.round(targetSize * 0.045);
+      ctx.font = `800 ${topFontSize}px ${fontFace}`;
+      ctx.fillStyle = '#ffffff';
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(text, canvasWidth / 2, targetSize * 0.12);
+      ctx.restore();
+    }
 
     // Bottom pill
     if (subtext) {

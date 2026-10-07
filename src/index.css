@@ -8,11 +8,6 @@
     color: #1e293b;
     font-family: 'Inter', system-ui, sans-serif;
   }
-
-  html.dark, html.dark body, body.dark {
-    background-color: #020617;
-    color: #f8fafc;
-  }
 }
 
 /* Custom scrollbars */

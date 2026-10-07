@@ -1,21 +1,17 @@
 import React from 'react';
-import { QrCode, Scan, Bookmark, Sun, Moon } from 'lucide-react';
+import { QrCode, Scan, Bookmark } from 'lucide-react';
 
 interface HeaderProps {
-  isDarkMode: boolean;
-  onToggleDarkMode: () => void;
   onOpenScanner: () => void;
   onOpenPresets: () => void;
 }
 
 export const Header: React.FC<HeaderProps> = ({
-  isDarkMode,
-  onToggleDarkMode,
   onOpenScanner,
   onOpenPresets
 }) => {
   return (
-    <header className="border-b border-slate-200 dark:border-slate-800 bg-white/90 dark:bg-slate-900/90 backdrop-blur-md sticky top-0 z-40 transition-colors">
+    <header className="border-b border-slate-200 bg-white/95 backdrop-blur-md sticky top-0 z-40 transition-colors">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
         <div className="flex items-center gap-3">
           <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-pink-500 via-rose-500 to-purple-600 flex items-center justify-center shadow-md shadow-pink-500/25">
@@ -23,10 +19,10 @@ export const Header: React.FC<HeaderProps> = ({
           </div>
           <div>
             <div className="flex items-center gap-2">
-              <span className="font-extrabold text-lg tracking-tight text-slate-900 dark:text-white">
-                QR<span className="text-pink-600 dark:text-pink-400">Studio</span>
+              <span className="font-extrabold text-lg tracking-tight text-slate-900">
+                QR<span className="text-pink-600">Studio</span>
               </span>
-              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-pink-100 dark:bg-pink-950/60 text-pink-600 dark:text-pink-300 border border-pink-200 dark:border-pink-800/40">
+              <span className="text-[10px] font-bold uppercase px-2 py-0.5 rounded-full bg-pink-100 text-pink-600 border border-pink-200">
                 100% Free
               </span>
             </div>
@@ -34,28 +30,9 @@ export const Header: React.FC<HeaderProps> = ({
         </div>
 
         <div className="flex items-center gap-2">
-          {/* Light / Dark Mode Toggle */}
-          <button
-            onClick={onToggleDarkMode}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition"
-            title={isDarkMode ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-          >
-            {isDarkMode ? (
-              <>
-                <Sun className="w-4 h-4 text-amber-400" />
-                <span className="hidden sm:inline">Light</span>
-              </>
-            ) : (
-              <>
-                <Moon className="w-4 h-4 text-indigo-500" />
-                <span className="hidden sm:inline">Dark</span>
-              </>
-            )}
-          </button>
-
           <button
             onClick={onOpenPresets}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-slate-800 dark:hover:bg-slate-700 text-slate-700 dark:text-slate-200 border border-slate-200 dark:border-slate-700 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-slate-100 hover:bg-slate-200 text-slate-700 border border-slate-200 transition"
           >
             <Bookmark className="w-4 h-4 text-pink-500" />
             <span className="hidden sm:inline">My Saved</span>
@@ -63,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({
 
           <button
             onClick={onOpenScanner}
-            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-50 hover:bg-pink-100 dark:bg-pink-950/40 dark:hover:bg-pink-900/40 text-pink-600 dark:text-pink-300 border border-pink-200 dark:border-pink-800/50 transition"
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-semibold bg-pink-50 hover:bg-pink-100 text-pink-600 border border-pink-200 transition"
           >
             <Scan className="w-4 h-4 text-pink-500" />
             <span>Test Scanner</span>
