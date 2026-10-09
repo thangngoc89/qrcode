@@ -30,7 +30,7 @@ interface StyleEditorProps {
 
 export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onReset }) => {
   const [activeSubTab, setActiveSubTab] = useState<'frames' | 'shapes' | 'logo' | 'level'>('frames');
-  const [mode, setMode] = useState<'classic' | 'logo'>('classic');
+  const mode = style.logoSrc ? 'logo' : 'classic';
 
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
@@ -46,7 +46,6 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onRes
         logoSrc: result,
         errorCorrectionLevel: 'H'
       }));
-      setMode('logo');
     };
     reader.readAsDataURL(file);
   };
@@ -107,7 +106,6 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onRes
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <button
           onClick={() => {
-            setMode('classic');
             onChange(prev => ({ ...prev, logoSrc: null }));
           }}
           className={`flex items-center justify-between p-3.5 rounded-2xl border transition text-left ${
@@ -130,8 +128,14 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onRes
 
         <button
           onClick={() => {
-            setMode('logo');
             setActiveSubTab('logo');
+            if (!style.logoSrc) {
+              onChange(prev => ({
+                ...prev,
+                logoSrc: PRESET_ICONS[0].svgDataUri,
+                errorCorrectionLevel: 'H'
+              }));
+            }
           }}
           className={`flex items-center justify-between p-3.5 rounded-2xl border transition text-left ${
             mode === 'logo'
@@ -668,9 +672,20 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onRes
       {activeSubTab === 'logo' && (
         <div className="space-y-4">
           <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">
-              Preset Brand & Symbol Logos
-            </label>
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-semibold text-slate-700 dark:text-slate-300">
+                Preset Brand & Symbol Logos
+              </label>
+              {style.logoSrc && (
+                <button
+                  onClick={() => onChange(prev => ({ ...prev, logoSrc: null }))}
+                  className="flex items-center gap-1 text-xs text-rose-500 hover:text-rose-600 transition"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Remove Logo
+                </button>
+              )}
+            </div>
             <div className="grid grid-cols-4 sm:grid-cols-6 gap-2">
               {PRESET_ICONS.map(icon => (
                 <button
@@ -681,7 +696,6 @@ export const StyleEditor: React.FC<StyleEditorProps> = ({ style, onChange, onRes
                       logoSrc: icon.svgDataUri,
                       errorCorrectionLevel: 'H'
                     }));
-                    setMode('logo');
                   }}
                   className={`flex flex-col items-center justify-center p-2 rounded-xl border transition ${
                     style.logoSrc === icon.svgDataUri

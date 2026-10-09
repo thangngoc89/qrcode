@@ -38,6 +38,21 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style, onOpenScan
       try {
         setIsRendering(true);
 
+        // Preload logo image if provided to guarantee browser image cache is primed
+        if (style.logoSrc) {
+          try {
+            const preloadImg = new Image();
+            preloadImg.crossOrigin = 'anonymous';
+            preloadImg.src = style.logoSrc;
+            if (preloadImg.decode) {
+              await preloadImg.decode().catch(() => {});
+            }
+          } catch {
+            // ignore preload decode failure
+          }
+        }
+        if (isCancelled) return;
+
         const qrInstance = new QRCodeStyling({
           width: 600,
           height: 600,
@@ -138,6 +153,19 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style, onOpenScan
     try {
       setIsRendering(true);
 
+      if (style.logoSrc) {
+        try {
+          const preloadImg = new Image();
+          preloadImg.crossOrigin = 'anonymous';
+          preloadImg.src = style.logoSrc;
+          if (preloadImg.decode) {
+            await preloadImg.decode().catch(() => {});
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const qrInstance = new QRCodeStyling({
         width: selectedSize,
         height: selectedSize,
@@ -213,6 +241,19 @@ export const QRPreview: React.FC<QRPreviewProps> = ({ content, style, onOpenScan
 
   const handleDownloadSVG = async () => {
     try {
+      if (style.logoSrc) {
+        try {
+          const preloadImg = new Image();
+          preloadImg.crossOrigin = 'anonymous';
+          preloadImg.src = style.logoSrc;
+          if (preloadImg.decode) {
+            await preloadImg.decode().catch(() => {});
+          }
+        } catch {
+          // ignore
+        }
+      }
+
       const qrInstance = new QRCodeStyling({
         width: 1024,
         height: 1024,
